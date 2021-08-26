@@ -3,6 +3,6 @@ const router = express.Router()
 
 const dataService = require('../services/data.service')
 
-router.post('/', dataService.getData)
+router.get('/', dataService.getData)
 
 module.exports = router
