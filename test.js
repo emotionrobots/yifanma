@@ -14,7 +14,7 @@ cert: cert
 
 app.get('/', (req, res) => {
 //      res.redirect('http://example.com');
-   res.send('yay! Now using https...'); // only http work as of right now
+   res.send('Test Account'); // only http work as of right now
 });
 app.listen(9001, () => {
   console.log("default app starting on port : " + 9001)
