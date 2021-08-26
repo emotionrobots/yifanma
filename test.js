@@ -1,24 +1,29 @@
 const express = require('express');
 const https = require('https');
+const http = require('http')
 const fs = require('fs');
-app = require('.');
-const port = 3000;
-
-// var key = fs.readFileSync(__dirname + '/../certs/selfsigned.key');
-// var cert = fs.readFileSync(__dirname + '/../certs/selfsigned.crt');
-// var options = {
-//   key: key,
-//   cert: cert
-// };
-
 app = express()
+const port = 9002;
+
+var key = fs.readFileSync('/etc/letsencrypt/live/pc3-backend.e-motion.ai/privkey.pem');
+var cert = fs.readFileSync('/etc/letsencrypt/live/pc3-backend.e-motion.ai/fullchain.pem');
+var options = {
+key: key,
+cert: cert
+};
+
 app.get('/', (req, res) => {
-   res.send('Now using https..');
+//      res.redirect('http://example.com');
+   res.send('yay! Now using https...'); // only http work as of right now
 });
-app.listen(9000)
+app.listen(9001, () => {
+  console.log("default app starting on port : " + 9001)
+});
 
-// var server = https.createServer(options, app);
+const server = https.createServer(options, app);
+server.listen(port, () => {
+  console.log("server starting on port : " + port)
+});
 
-// server.listen(port, () => {
-//   console.log("server starting on port : " + port)
-// });
+const httpServer = http.createServer(app)
+httpServer.listen(9000)
