@@ -20,10 +20,10 @@ app.listen(9001, () => {
   console.log("default app starting on port : " + 9001)
 });
 
-const server = https.createServer(options, app);
-server.listen(port, () => {
-  console.log("server starting on port : " + port)
-});
+// const server = https.createServer(options, app);
+// server.listen(port, () => {
+//   console.log("server starting on port : " + port)
+// });
 
 const httpServer = http.createServer(app)
 httpServer.listen(9000)
