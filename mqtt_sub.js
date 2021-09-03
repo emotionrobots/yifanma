@@ -1,15 +1,17 @@
 var mqtt = require('mqtt')
-var client = mqtt.connect('mqtt://18.237.68.217')
+var client = mqtt.connect('mqtt://pplcnt-mqtt.e-motion.ai')
+// var client = mqtt.connect('mqtt://18.237.68.217')
 
 client.on("connect", function(){	
-  console.log("connected  " + client.connected);
-  client.subscribe('presence', function (err) {
-    console.log("subscribed")
-  })
+  console.log("connected: " + client.connected);
+  client.publish('presence', 'Hello mqtt')
+})
+
+client.subscribe('presence', function (err) {
+  console.log("subscribed")
 })
 
 client.on('message', function(topic, message) {
-  // message is Buffer
-  console.log(message.toString())
+  console.log(topic + " " + message.toString())
   //client.end()
 })
