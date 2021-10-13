@@ -89,14 +89,11 @@ class pplCounter extends Layer {
    //  PresenceHandler 
    //--------------------------------------------------------------------------
    PresenceHandler(topic, message, client) {
-    g.dprint(3, "Called PresenceHandler");
 
     var params = JSON.parse(message.toString())
-     
-    /* Do something here... note no ens.end() type return */
     
-    // debug
-    console.log(params);
+    g.dprint(3, "Called PresenceHandler", params["device"]);
+    
  }
 
 }  // pplCounter 

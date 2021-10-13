@@ -35,6 +35,7 @@ function dprint(v, label, param='') {
    let verbo = global.verbosity;
    if (v <= verbo) {
       // console.log(timestamp()+' '+label);
+      console.log(label);
       console.log(param);
    }
 }
