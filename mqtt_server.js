@@ -93,6 +93,7 @@ function start(broker, usrname, pwd, ca_cert) {
    });
 
    client.on('connect', function () {
+     console.log("connected!")
       client.subscribe("#", function (err) {
          if (err) {
             g.dprint(0, "Error MQTT 1: ", err);
