@@ -45,11 +45,11 @@ class pplCounter extends Layer {
 			http.register('/update_counter', 'GET', this.update_counter);
 
       //-----------------------------------------------------------------------	    
-      //  MQTT registry 
+      //  MQTT registry
       //-----------------------------------------------------------------------	    
       this.add_mqtt_entry('/entry', this.EntryHandler);
       this.add_mqtt_entry('/exit', this.ExitHandler);
-      
+      this.add_mqtt_entry('/presence', this.PresenceHandler);
    } 
 
    update_counter(url, res) {
@@ -84,6 +84,20 @@ class pplCounter extends Layer {
 			--counter;
 
 	 }
+
+   //--------------------------------------------------------------------------
+   //  PresenceHandler 
+   //--------------------------------------------------------------------------
+   PresenceHandler(topic, message, client) {
+    g.dprint(3, "Called PresenceHandler");
+
+    var params = JSON.parse(message.toString())
+     
+    /* Do something here... note no ens.end() type return */
+    
+    // debug
+    console.log(params);
+ }
 
 }  // pplCounter 
 
