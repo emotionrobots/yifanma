@@ -26,7 +26,7 @@
 const fs = require('fs');
 const AWS = require('aws-sdk');
 const Layer = require('./layer');
-//const g = require('./globals');
+const g = require('./globals');
 const http = require('./http_server')
 
 var counter = 0;
