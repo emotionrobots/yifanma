@@ -1,15 +1,8 @@
 {
-  "name": "people-counter",
-  "version": "1.0.0",
-  "description": "People Counter IoT",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1",
-    "mqtt": "^4.2.8"
+    "aws-sdk": "^2.1007.0",
+    "mqtt": "^4.2.8",
+    "mysql": "^2.18.1",
+    "neo4j-driver": "^4.3.3"
   }
 }
