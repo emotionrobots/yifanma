@@ -98,8 +98,3 @@ class Layer {
 }
 
 module.exports = Layer;
-
-
-
-
-

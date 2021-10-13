@@ -49,8 +49,7 @@ class pplCounter extends Layer {
       //-----------------------------------------------------------------------	    
       this.add_mqtt_entry('/entry', this.EntryHandler);
       this.add_mqtt_entry('/exit', this.ExitHandler);
-
-			http.start();
+      
    } 
 
    update_counter(url, res) {
