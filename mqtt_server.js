@@ -97,7 +97,7 @@ function start(broker, usrname, pwd, ca_cert) {
       client.subscribe("#", function (err) {
          if (err) {
             g.dprint(0, "Error MQTT 1: ", err);
-	 }
+	       }
       });
    });
 
@@ -107,6 +107,8 @@ function start(broker, usrname, pwd, ca_cert) {
       g.dprint(3, "topic: "+topic.toString());
       g.dprint(3, "message: "+message.toString());
 */
+
+      console.log(topic + ' ' + message);
 
       try {
          dispatch(topic, message);
