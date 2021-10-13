@@ -123,6 +123,7 @@ function start(preamble='/') {
          });
       }
       else if (req.method == 'GET') {
+        console.log("GET request received!")
          try {
             var strs = req.url.split('/');
             if ((strs.length >= 3) && (strs[1] == preamble)) {
