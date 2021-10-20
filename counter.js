@@ -79,7 +79,7 @@ class pplCounter extends Layer {
        
       /* Do something here... note no ens.end() type return */
 
-	 }
+   }
 
    //--------------------------------------------------------------------------
    //  PresenceHandler 
@@ -87,13 +87,13 @@ class pplCounter extends Layer {
    PresenceHandler(topic, message, client) {
 
     // params format:
-    // {"device":"rpi4", "deviceid":16, "location":"Store entrance", "datetime":"2021/10/13 16:35:02", "enter":1, "exit":5}
+    // {"device":"rpi4", "deviceid":16, "location":"Store entrance", 
+    //         "datetime":"2021/10/13 16:35:02", "enter":1, "exit":5}
+	  
     var params = JSON.parse(message.toString())
+    g.dprint(3, "Called PresenceHandler", params["device"]);
 
     counter += params["enter"] - params["exit"];
-
-    //g.dprint(3, "Called PresenceHandler", params["device"]);
-    
  }
 
 }  // pplCounter 

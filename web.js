@@ -82,7 +82,7 @@ class Web extends Layer {
       g.dprint(3, "Called version");
       g.dprint(3, "version is", global.version);
       res.writeHead(200, {'Content-Type': 'text/html'});
-      res.end(g.version);
+      res.end(global.version);
    }
 }
 
