@@ -53,7 +53,9 @@ class pplCounter extends Layer {
    } 
 
    update_counter(url, res) {
-      res.send({counter: counter});
+      g.dprint(3, "Called update_counter");
+      res.writeHead(200, {'Content-Type': 'text/html'});
+      res.end(counter);
       counter = 0;
    }
 	 
