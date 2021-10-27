@@ -53,7 +53,10 @@ class pplCounter extends Layer {
    } 
 
    update_counter(url, res) {
-      res.send(counter);
+      g.dprint(3, "Called version");
+      g.dprint(3, "version is", global.version);
+      res.writeHead(200, {'Content-Type': 'text/html'});
+      res.end(global.version);
       counter = 0;
    }
 	 
@@ -96,6 +99,6 @@ class pplCounter extends Layer {
     counter += params["enter"] - params["exit"];
  }
 
-}  // pplCounter 
+}  // pplCounter
 
 module.exports = pplCounter;
