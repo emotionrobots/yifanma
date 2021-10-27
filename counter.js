@@ -53,7 +53,7 @@ class pplCounter extends Layer {
    } 
 
    update_counter(url, res) {
-      res.send(counter);
+      res.send({counter: counter});
       counter = 0;
    }
 	 
