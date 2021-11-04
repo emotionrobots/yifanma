@@ -95,6 +95,10 @@ class pplCounter extends Layer {
     // fake MQTT publish message
     // mosquitto_pub -h 'mqtt.e-motion.ai' -t "/presence" -m "{\"device\": \"rpi4\", \"deviceid\": 16, \"location\": \"Store entrance\", \"datetime\": \"2021/10/13 16:35:02\", \"enter\": 1, \"exit\": 20}"
 	  
+    // TODO: handle malformed data
+    // ex: test if JSON key is available
+    // ex2: try, catch, accept
+
     var params = JSON.parse(message.toString())
     g.dprint(3, message.toString())
     g.dprint(3, "Called PresenceHandler", params["device"]);
