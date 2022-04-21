@@ -66,8 +66,34 @@ function addCameraHistory(camera_id, change) {
   ], (error, results) => {})
 }
 
+const USER_ASSOC = `
+SELECT memberships.org_id, 
+		organizations.org_name, 
+		rooms.room_id, 
+		rooms.location, 
+		rooms.name as \`room_name\`, 
+		cameras.camera_id, 
+		cameras.device_name 
+FROM memberships 
+INNER JOIN organizations ON memberships.org_id = organizations.org_id
+LEFT JOIN rooms ON memberships.org_id = rooms.org_id
+LEFT JOIN cameras ON cameras.room_id = rooms.room_id
+WHERE memberships.member_id = ?;
+`
+
+function getUserAssociation(user_id, callback, err_handler) {
+  db.query(USER_ASSOC, [user_id], (error, results) => {
+    if(error) {
+      err_handler(error)
+    } else {
+      callback(results)
+    }
+  });
+}
+
 module.exports.initialize_db=initialize_db
 module.exports.get_entry_log=get_entry_log
 module.exports.getCurrentPeopleInRoomToday=getCurrentPeopleInRoomToday
 module.exports.getCurrentPeopleInRoomCurrentHour=getCurrentPeopleInRoomCurrentHour
 module.exports.addCameraHistory=addCameraHistory
+module.exports.getUserAssociation=getUserAssociation

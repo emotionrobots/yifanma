@@ -28,6 +28,7 @@ const AWS = require('aws-sdk');
 const Layer = require('./layer');
 const g = require('./globals');
 const http = require('./http_server')
+const db = require('./database')
 
 var counter = 0;
 
@@ -35,52 +36,19 @@ class pplCounter extends Layer {
    constructor() {
       super();
 
-      //-----------------------------------------------------------------------	    
+      //-----------------------------------------------------------------------
       //  HTTP registry 
-      //-----------------------------------------------------------------------	    
+      //-----------------------------------------------------------------------
 	
       /* Insert POST handleris below */
 
       /* Insert GET handlers below */
-		this.add_http_entry('/update_counter', 'GET', this.update_counter);
 
-      //-----------------------------------------------------------------------	    
+      //-----------------------------------------------------------------------
       //  MQTT registry
-      //-----------------------------------------------------------------------	    
-      this.add_mqtt_entry('/entry', this.EntryHandler);
-      this.add_mqtt_entry('/exit', this.ExitHandler);
+      //-----------------------------------------------------------------------
       this.add_mqtt_entry('/presence', this.PresenceHandler);
-   }
-
-   update_counter(url, res) {
-      g.dprint(3, "Called update_counter");
-      res.writeHead(200, {'Content-Type': 'text/html'});
-      res.end(counter.toString());
-      counter = 0;
-   }
-	 
-   //--------------------------------------------------------------------------
-   //  EntryHandler 
-   //--------------------------------------------------------------------------
-   EntryHandler(topic, message, client) {
-      g.dprint(3, "Called EntryHandler");
-
-      var params = JSON.parse(message.toString())
-       
-      /* Do something here... note no ens.end() type return */
-
-   }
-
-   //--------------------------------------------------------------------------
-   //  ExitHandler 
-   //--------------------------------------------------------------------------
-   ExitHandler(topic, message, client) {
-      g.dprint(3, "Called ExitHandler");
-
-      var params = JSON.parse(message.toString())
-       
-      /* Do something here... note no ens.end() type return */
-
+      this.add_mqtt_entry('/history', this.HistoryHandler);
    }
 
    //--------------------------------------------------------------------------
@@ -94,10 +62,6 @@ class pplCounter extends Layer {
 
     // fake MQTT publish message
     // mosquitto_pub -h 'mqtt.e-motion.ai' -t "/presence" -m "{\"device\": \"rpi4\", \"deviceid\": 16, \"location\": \"Store entrance\", \"datetime\": \"2021/10/13 16:35:02\", \"enter\": 1, \"exit\": 20}"
-	  
-    // TODO: handle malformed data
-    // ex: test if JSON key is available
-    // ex2: try, catch, accept
 
     var params = JSON.parse(message.toString())
     g.dprint(3, message.toString())
@@ -106,6 +70,15 @@ class pplCounter extends Layer {
     counter += params["enter"] - params["exit"];
  }
 
-}  // pplCounter
+ //--------------------------------------------------------------------------
+   //  HistoryHandler 
+   //--------------------------------------------------------------------------
+   HistoryHandler(topic, message, client) {
+    var params = JSON.parse(message.toString())
+    g.dprint(3, message.toString())
+    console.log("Called HistoryHandler");
+ }
+
+}
 
 module.exports = pplCounter;
