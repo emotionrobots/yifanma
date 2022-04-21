@@ -21,7 +21,9 @@ const http_server = require('./http_server');
 const mqtt_server = require('./mqtt_server'); 
 const Web = require('./web');
 const pplCounter = require('./counter');
+const api = require('./api')
 const g = require('./globals');
+const db = require('./database')
 
 // Set debug print (dprint) verbosity
 if (process.argv.length > 2) 
@@ -32,6 +34,7 @@ if (process.argv.length > 2)
 // silent otherwise
 g.dprint(0, "Running with verbosity: ", global.verbosity);
 
+db.initialize_db()
 
 /* Register console dispatch */
 var frontend = new Web();
@@ -44,6 +47,8 @@ var pplc = new pplCounter();
 pplc.bind_mqtt(mqtt_server); 
 pplc.bind_http(http_server);   // can comment out since there is no HTTP POST/GET
 
+var apim = new api();
+apim.bind_http(http_server);
 
 /* Start MQTT server */
 mqtt_server.start('mqtt://mqtt.e-motion.ai');

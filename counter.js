@@ -42,7 +42,7 @@ class pplCounter extends Layer {
       /* Insert POST handleris below */
 
       /* Insert GET handlers below */
-			this.add_http_entry('/update_counter', 'GET', this.update_counter);
+		this.add_http_entry('/update_counter', 'GET', this.update_counter);
 
       //-----------------------------------------------------------------------	    
       //  MQTT registry

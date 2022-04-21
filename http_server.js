@@ -124,6 +124,8 @@ function start(preamble='/') {
       }
       else if (req.method == 'GET') {
         console.log("GET request received!")
+        console.log(get_dispatch_tbl)
+        console.log(req.url)
          try {
             var strs = req.url.split('/');
             if ((strs.length >= 3) && (strs[1] == preamble)) {
@@ -132,7 +134,7 @@ function start(preamble='/') {
                  endpt = [endpt, strs[i] ].join('/');
                }
                get_dispatch(endpt, res);
-	    }
+	         }
          }
          catch(e) {
             g.dprint(0, "Error in HTTP 2: ", e);
