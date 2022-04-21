@@ -22,8 +22,52 @@ function initialize_db(){
 }
 
 function get_entry_log(camera_id, callback){
+  //TODO: Prone to sql injection
   db.query("SELECT id, date, count FROM entry_log WHERE camera_id=" + camera_id.toString(), callback)
+}
+
+// Calculates people in room for the current day
+function getCurrentPeopleInRoomToday(camera_id, callback, err_handler){
+  db.query("select count \
+  from entry_log \
+  where day(date) = day(NOW()) and camera_id = ?;",[
+    camera_id
+  ], (error, results) => {
+    if(error) {
+      err_handler(error)
+    } else {
+      callback(results)
+    }
+  });
+}
+
+// Calculates people in room for the current day
+function getCurrentPeopleInRoomCurrentHour(camera_id, callback, err_handler){
+  db.query("select count \
+  from entry_log \
+  where day(date) = day(NOW()) and \
+  hour(date) = hour(now()) and \
+  camera_id = 1;",[
+    camera_id
+  ], (error, results) => {
+    if(error) {
+      err_handler(error)
+    } else {
+      callback(results)
+    }
+  });
+}
+
+function addCameraHistory(camera_id, change) {
+  db.query("INSERT INTO `peoplecounter`.`entry_log` (`camera_id`, `date`, `count`) VALUES (?, NOW(), ?);",
+  [
+    camera_id,
+    change
+  ], (error, results) => {})
 }
 
 module.exports.initialize_db=initialize_db
 module.exports.get_entry_log=get_entry_log
+module.exports.getCurrentPeopleInRoomToday=getCurrentPeopleInRoomToday
+module.exports.getCurrentPeopleInRoomCurrentHour=getCurrentPeopleInRoomCurrentHour
+module.exports.addCameraHistory=addCameraHistory

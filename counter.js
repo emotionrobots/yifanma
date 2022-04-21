@@ -50,7 +50,7 @@ class pplCounter extends Layer {
       this.add_mqtt_entry('/entry', this.EntryHandler);
       this.add_mqtt_entry('/exit', this.ExitHandler);
       this.add_mqtt_entry('/presence', this.PresenceHandler);
-   } 
+   }
 
    update_counter(url, res) {
       g.dprint(3, "Called update_counter");

@@ -30,6 +30,15 @@ const g = require('./globals');
 const http = require('./http_server')
 const db = require('./database')
 
+const InfoWidgetTypes = {
+    SINGLE: "infocard.single",
+    REPORT: "infocard.report",
+    CHART: "infocard.chart",
+    LOADING: "infocard.waiting",
+    SETTINGS: "infocard.settings",
+    LISTPLUSINFO: "infocard.listinfo"
+}
+
 class api extends Layer {
     constructor() {
        super();
@@ -37,8 +46,8 @@ class api extends Layer {
        this.add_http_entry('/user_login', 'POST', this.user_login);
        this.add_http_entry('/get_history', 'GET', this.get_history);
        this.add_http_entry('/get_occupancy', 'GET', this.get_occupancy);
-       this.add_http_entry('/get_hourly_change', 'GET', this.get_hourly_change);
-       this.add_http_entry('/get_daily_change', 'GET', this.get_daily_change);
+       this.add_http_entry('/get_hourly_poschange', 'GET', this.get_hourly_poschange);
+       this.add_http_entry('/get_hourly_negchange', 'GET', this.get_hourly_negchange);
        this.add_http_entry('/get_user_association', 'GET', this.get_user_association);
     }
 
@@ -67,17 +76,59 @@ class api extends Layer {
         })
     }
 
+    verify_authenticity(){
+        // TODO: Implement with cognito
+    }
+
     get_occupancy(url, res){
-        res.writeHead(200, {'Content-Type': 'text/html'});
-        res.end("meow");
+        db.getCurrentPeopleInRoomToday(1, (result) => {
+            const sum = result.reduce((partialSum, a) => partialSum + a.count, 0);
+            res.writeHead(200, {'Content-Type': 'application/json'});
+            res.end(JSON.stringify({
+                cardType: InfoWidgetTypes.SINGLE,
+                attributes: {
+                    data: sum + " People in the Room",
+                    icon: "human"
+                }
+            }));
+        },
+        (err) => {
+            res.writeHead(200, {'Content-Type': 'application/json'});
+            res.end(JSON.stringify({
+                cardType: InfoWidgetTypes.SINGLE,
+                attributes: {
+                    data: "An error occured",
+                    icon: "human"
+                }
+            }));
+        })
     }
 
-    get_hourly_change(url, res){
-        res.writeHead(200, {'Content-Type': 'text/html'});
-        res.end("meow");
+    get_hourly_poschange(url, res){
+        db.getCurrentPeopleInRoomCurrentHour(1, (result) => {
+            const sum = result.reduce((partialSum, a) => partialSum + (a.count > 0 ? a.count : 0), 0);
+            res.writeHead(200, {'Content-Type': 'application/json'});
+            res.end(JSON.stringify({
+                cardType: InfoWidgetTypes.SINGLE,
+                attributes: {
+                    data: sum + " People Entered in the Past Hour",
+                    icon: "enter"
+                }
+            }));
+        },
+        (err) => {
+            res.writeHead(200, {'Content-Type': 'application/json'});
+            res.end(JSON.stringify({
+                cardType: InfoWidgetTypes.SINGLE,
+                attributes: {
+                    data: "An error occured",
+                    icon: "enter"
+                }
+            }));
+        })
     }
 
-    get_daily_change(url, res){
+    get_hourly_negchange(url, res){
         res.writeHead(200, {'Content-Type': 'text/html'});
         res.end("meow");
     }
