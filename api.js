@@ -30,6 +30,14 @@ const g = require('./globals');
 const http = require('./http_server')
 const mqtt = require('./mqtt_server')
 const db = require('./database')
+const cognitoJwtVerifier = require('aws-jwt-verify');
+
+// Verifier that expects valid access tokens:
+const verifier = cognitoJwtVerifier.CognitoJwtVerifier.create({
+    userPoolId: "us-east-1_pLyQY4wgB",
+    tokenUse: "access",
+    clientId: "4mc316gdmd3o7637bqoqp2j99f",
+})
 
 const InfoWidgetTypes = {
     SINGLE: "infocard.single",
@@ -42,154 +50,180 @@ const InfoWidgetTypes = {
 
 class api extends Layer {
     constructor() {
-       super();
+        super();
 
-       this.add_http_entry('/user_login', 'POST', this.user_login);
-       this.add_http_entry('/get_user_orgs', 'GET', this.get_user_orgs);
-       this.add_http_entry('/get_history', 'GET', this.get_history);
-       this.add_http_entry('/get_occupancy', 'GET', this.get_occupancy);
-       this.add_http_entry('/get_hourly_poschange', 'GET', this.get_hourly_poschange);
-       this.add_http_entry('/get_hourly_negchange', 'GET', this.get_hourly_negchange);
+        //    this.add_http_entry('/user_login', 'POST', this.user_login);
+        this.add_http_entry('/get_user_orgs', 'POST', this.get_user_orgs);
+        this.add_http_entry('/get_history', 'POST', this.get_history);
+        this.add_http_entry('/get_occupancy', 'POST', this.get_occupancy);
+        this.add_http_entry('/get_hourly_poschange', 'POST', this.get_hourly_poschange);
+        this.add_http_entry('/get_hourly_negchange', 'POST', this.get_hourly_negchange);
     }
 
-    user_login(url, data, res){
-        /*
-        validate user access token with cognito
-        grant user access for session
-        */
+    /*
+    Verifies user access token with cognito and returns the user's ID from the database.
+    */
+    verify_jwt(token, callback) {
+        verifier.verify(
+            token
+        ).then((payload) => {
+            db.addUserIfNotExist(payload.username, (result) => {
+                if(result.error == 0) {
+                    callback(true, result.user_id)
+                } else {
+                    callback(true, result.message)
+                }
+            })
+        },
+            () => {
+                console.log("Token not valid!");
+                callback(false, null)
+            });
     }
 
     // Temporarily assume user is id 2
-    get_user_orgs(url, res) {
-        db.getUserAssociation(2, (result) => {
-            var rJ = {}
-            for (var i = 0; i < result.length; i++) {
-                const d = result[i]
-
-                if(!(d.org_id in rJ)) {
-                    rJ[d.org_id] = {
-                        name: d.org_name,
-                        desc: null,
-                        date_creation: null,
-                        cameraGroups: {}
-                    }
-                }
-
-                if(!(d.room_id in rJ[d.org_id])){
-                    rJ[d.org_id]["cameraGroups"][d.room_id] = {
-                        name: d.room_name,
-                        cameras: []
-                    }
-                }
-
-                if(d.camera_id != null) {
-                    rJ[d.org_id]["cameraGroups"][d.room_id]["cameras"].push({
-                        name: d.device_name
-                    })
-                }
+    get_user_orgs(url, data, res) {
+        this.verify_jwt(data.token, (result, user_id) => {
+            if (!result) {
+                res.writeHead(401, {});
+                res.end();
+                return;
             }
-
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify(rJ));
-        },
-        (err) => {
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({result: null, err: err.code}));
+            db.getUserAssociation(user_id, (result) => {
+                var rJ = {}
+                for (var i = 0; i < result.length; i++) {
+                    const d = result[i]
+    
+                    if (!(d.org_id in rJ)) {
+                        rJ[d.org_id] = {
+                            name: d.org_name,
+                            desc: null,
+                            date_creation: null,
+                            cameraGroups: {}
+                        }
+                    }
+    
+                    if (!(d.room_id in rJ[d.org_id])) {
+                        rJ[d.org_id]["cameraGroups"][d.room_id] = {
+                            name: d.room_name,
+                            cameras: []
+                        }
+                    }
+    
+                    if (d.camera_id != null) {
+                        rJ[d.org_id]["cameraGroups"][d.room_id]["cameras"].push({
+                            name: d.device_name
+                        })
+                    }
+                }
+    
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(rJ));
+            },
+                (err) => {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ result: null, err: err.code }));
+                })
         })
     }
 
-    get_history(url, res){
+    get_history(url, data, res) {
         /*
         Add params
         */
 
         //TODO: Change 1 to camera_id
         db.get_entry_log(1, function (err, result, fields) {
-            if(err) {
-                res.writeHead(200, {'Content-Type': 'application/json'});
-                res.end(JSON.stringify({result: result, err: err.code}));
+            if (err) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ result: result, err: err.code }));
                 throw err;
             }
             console.log(result)
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({result: result, err: 0}));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ result: result, err: 0 }));
         })
     }
 
-    verify_authenticity(){
-        // TODO: Implement with cognito
-    }
+    get_occupancy(url, data, res) {
+        //   mqtt.publish('/history', "Send all data!")
+        this.verify_jwt(data.token, (result, payload) => {
+            if (result) {
+                console.log(payload)
+                // TODO: retrieve all data and put it into the database
+                // for loop 
+                // db.addCameraHistory(cam id, data change)
 
-    get_occupancy(url, res){
-      mqtt.publish('/history', "Send all data!")
+                //TODO: Change 1 to camera_id
+                db.getCurrentPeopleInRoom(1, (result) => {
+                    const sum = result.reduce((partialSum, a) => partialSum + a.count, 0);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({
+                        cardType: InfoWidgetTypes.SINGLE,
+                        attributes: {
+                            data: sum + " People in the Room",
+                            icon: "human"
+                        }
+                    }));
+                },
+                    (err) => {
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                            cardType: InfoWidgetTypes.SINGLE,
+                            attributes: {
+                                data: "An error occured",
+                                icon: "human"
+                            }
+                        }));
+                    })
+            } else {
+                res.writeHead(401, {});
+                res.end();
+                return;
+            }
 
-    // TODO: retrieve all data and put it into the database
-      // for loop 
-      // db.addCameraHistory(cam id, data change)
-
-        //TODO: Change 1 to camera_id
-        db.getCurrentPeopleInRoomToday(1, (result) => {
-            const sum = result.reduce((partialSum, a) => partialSum + a.count, 0);
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({
-                cardType: InfoWidgetTypes.SINGLE,
-                attributes: {
-                    data: sum + " People in the Room",
-                    icon: "human"
-                }
-            }));
-        },
-        (err) => {
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({
-                cardType: InfoWidgetTypes.SINGLE,
-                attributes: {
-                    data: "An error occured",
-                    icon: "human"
-                }
-            }));
         })
     }
 
-    retrieve_people_this_hour(res, isPos){
+    retrieve_people_this_hour(res, isPos) {
         //TODO: Change 1 to camera_id
         db.getCurrentPeopleInRoomCurrentHour(1, (result) => {
-            const sum = result.reduce((partialSum, a) => partialSum + ((isPos ?(a.count > 0) : (a.count < 0)) ? a.count : 0), 0);
-            res.writeHead(200, {'Content-Type': 'application/json'});
+            const sum = result.reduce((partialSum, a) => partialSum + ((isPos ? (a.count > 0) : (a.count < 0)) ? a.count : 0), 0);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
                 cardType: InfoWidgetTypes.SINGLE,
                 attributes: {
                     data: Math.abs(sum) + " People " + (isPos ? "Entered" : "Left") + " in the Past Hour",
-                    icon: "enter"
+                    icon: (isPos ? "enter" : "exit")
                 }
             }));
         },
-        (err) => {
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({
-                cardType: InfoWidgetTypes.SINGLE,
-                attributes: {
-                    data: "An error occured",
-                    icon: "enter"
-                }
-            }));
-        })
+            (err) => {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                    cardType: InfoWidgetTypes.SINGLE,
+                    attributes: {
+                        data: "An error occured",
+                        icon: (isPos ? "enter" : "exit")
+                    }
+                }));
+            })
     }
 
-    get_hourly_poschange(url, res){
+    get_hourly_poschange(url, data, res) {
         this.retrieve_people_this_hour(res, true)
     }
 
-    get_hourly_negchange(url, res){   
+    get_hourly_negchange(url, data, res) {
         this.retrieve_people_this_hour(res, false)
     }
 
-    get_user_association(url, res){
+    get_user_association(url, data, res) {
         /*
         returns the user's association with organizations and
         rooms and cameras
         */
-        res.writeHead(200, {'Content-Type': 'text/html'});
+        res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end("meow");
     }
 }

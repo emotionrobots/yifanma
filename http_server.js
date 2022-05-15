@@ -88,6 +88,9 @@ function start(preamble='/') {
          res.end();
       }
       else if (req.method == 'POST') {
+         console.log("POST request received!")
+         // console.log(post_dispatch_tbl)
+         // console.log(req.url)
          var body = '';
 
          req.on('data', function(data) {
@@ -107,13 +110,14 @@ function start(preamble='/') {
 
             try { 
                var strs = req.url.split('/');
-               if ((strs.length >= 3) && (strs[1] == preamble)) {
-                  var endpt = "/"+strs[2];
-                  for (var i=3; i<strs.length; i++) {
-                     endpt = [endpt, strs[i] ].join('/');
-                  }
-                  post_dispatch(endpt, body, res);
-	       }
+               // if ((strs.length >= 3) && (strs[1] == preamble)) {
+               //    var endpt = "/"+strs[2];
+               //    for (var i=3; i<strs.length; i++) {
+               //       endpt = [endpt, strs[i] ].join('/');
+               //    }
+               console.log(body[0])
+                  post_dispatch(req.url, JSON.parse(body), res);
+	       //}
             }
             catch(e) {
                g.dprint(0, "Error in HTTP 1: ", e);
@@ -124,8 +128,8 @@ function start(preamble='/') {
       }
       else if (req.method == 'GET') {
         console.log("GET request received!")
-        console.log(get_dispatch_tbl)
-        console.log(req.url)
+      //   console.log(get_dispatch_tbl)
+      //   console.log(req.url)
          try {
             var strs = req.url.split('/');
             if ((strs.length >= 3) && (strs[1] == preamble)) {
