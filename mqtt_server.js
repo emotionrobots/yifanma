@@ -116,6 +116,5 @@ function start(broker, usrname, pwd, ca_cert) {
    });
 }
 
-
 module.exports.register = register;
 module.exports.start = start;
