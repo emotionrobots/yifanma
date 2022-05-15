@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "aws-jwt-verify": "^3.0.0",
     "aws-sdk": "^2.1007.0",
     "express": "^4.17.3",
     "mqtt": "^4.2.8",
