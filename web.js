@@ -86,5 +86,4 @@ class Web extends Layer {
    }
 }
 
-
 module.exports = Web;
