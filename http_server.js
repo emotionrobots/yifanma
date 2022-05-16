@@ -60,6 +60,7 @@ function register(instance, endpt, entry) {
 //  POST dispatcher of registered endpt and action 
 //-----------------------------------------------------------------------------
 function post_dispatch(endpt, data, res) {
+   console.log(endpt)
    if (endpt in post_dispatch_tbl) {
       post_dispatch_tbl[endpt](endpt, data, res);
    }
@@ -77,7 +78,7 @@ function get_dispatch(endpt, res) {
 //-----------------------------------------------------------------------------
 //  Start the HTTP server
 //-----------------------------------------------------------------------------
-function start(preamble='/') {
+function start(preamble='api') {
    http.createServer(function(req, res) {
       res.setHeader('Access-Control-Allow-Origin','*');
       res.setHeader('Access-Control-Allow-Methods','OPTIONS,GET,POST');
@@ -110,14 +111,14 @@ function start(preamble='/') {
 
             try { 
                var strs = req.url.split('/');
-               // if ((strs.length >= 3) && (strs[1] == preamble)) {
-               //    var endpt = "/"+strs[2];
-               //    for (var i=3; i<strs.length; i++) {
-               //       endpt = [endpt, strs[i] ].join('/');
-               //    }
+                if ((strs.length >= 3) && (strs[1] == preamble)) {
+                   var endpt = "/"+strs[2];
+                   for (var i=3; i<strs.length; i++) {
+                      endpt = [endpt, strs[i] ].join('/');
+                   }
                console.log(body[0])
-                  post_dispatch(req.url, JSON.parse(body), res);
-	       //}
+                  post_dispatch(endpt, JSON.parse(body), res);
+	       }
             }
             catch(e) {
                g.dprint(0, "Error in HTTP 1: ", e);
