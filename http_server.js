@@ -130,16 +130,16 @@ function start(preamble='/') {
         console.log("GET request received!")
       //   console.log(get_dispatch_tbl)
       //   console.log(req.url)
-         try {
-            var strs = req.url.split('/');
-            if ((strs.length >= 3) && (strs[1] == preamble)) {
-               var endpt = "/"+strs[2];
-               for (var i=3; i<strs.length; i++) {
-                 endpt = [endpt, strs[i] ].join('/');
-               }
-               get_dispatch(endpt, res);
-	         }
-         }
+      try { 
+        var strs = req.url.split('/');
+        if ((strs.length >= 3) && (strs[1] == preamble)) {
+           var endpt = "/"+strs[2];
+           for (var i=3; i<strs.length; i++) {
+              endpt = [endpt, strs[i] ].join('/');
+           }
+           post_dispatch(endpt, JSON.parse(body), res);
+        }
+      }
          catch(e) {
             g.dprint(0, "Error in HTTP 2: ", e);
             res.writeHead(400, {'Content-Type': 'text'});
