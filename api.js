@@ -32,6 +32,8 @@ const mqtt = require('./mqtt_server')
 const db = require('./database')
 const cognitoJwtVerifier = require('aws-jwt-verify');
 
+const INTERVALS = 10
+
 // Verifier that expects valid access tokens:
 const verifier = cognitoJwtVerifier.CognitoJwtVerifier.create({
     userPoolId: "us-east-1_pLyQY4wgB",
@@ -81,7 +83,6 @@ class api extends Layer {
             });
     }
 
-    // Temporarily assume user is id 2
     get_user_orgs(url, data, res) {
         this.verify_jwt(data.token, (result, user_id) => {
             if (!result) {
@@ -103,7 +104,7 @@ class api extends Layer {
                         }
                     }
     
-                    if (!(d.room_id in rJ[d.org_id])) {
+                    if (!(d.room_id in rJ[d.org_id].cameraGroups)) {
                         rJ[d.org_id]["cameraGroups"][d.room_id] = {
                             name: d.room_name,
                             cameras: []
@@ -132,16 +133,69 @@ class api extends Layer {
         Add params
         */
 
-        //TODO: Change 1 to camera_id
-        db.get_entry_log(1, function (err, result, fields) {
-            if (err) {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ result: result, err: err.code }));
-                throw err;
+        this.verify_jwt(data.token, (result, payload) => {
+            if (result) {
+                // TODO: Check if user has permission to view data
+                // TODO: retrieve all data and put it into the database
+                // for loop 
+                // db.addCameraHistory(cam id, data change)
+
+                //TODO: Change 1 to camera_id
+                // try {
+                let start = new Date(data.start)
+                let end = new Date(data.end)
+
+                // console.log(start + '\n' + end + '\n' + result)
+                db.getAllEntriesWithin(start.toISOString(), end.toISOString(), data['room_id'], (result) => {
+                    let time_interval = (end - start) / (INTERVALS - 1)
+                    var curr_interval = 0;
+                    var num_of_ppl = 0;
+                    var num_entered = 0;
+                    var num_exited = 0;
+                    var arr = []
+
+                    var entry_ind = 0;
+
+                    for(var i = 0; i < INTERVALS; i ++){
+                        let curr_time = new Date(start * 1 + time_interval * i)
+                        let entry = result[entry_ind]
+
+                        while(entry_ind < result.length && curr_time > new Date(result[entry_ind].date)){
+                            num_of_ppl += entry.count
+                            if(entry.count > 0){
+                                num_entered += entry.count
+                            } else {
+                                num_exited += Math.abs(entry.count)
+                            }
+                            entry_ind++;
+                        }
+                        // Locale default to EN_US
+                        // + '/' + (curr_time.getFullYear() % 100)
+                        arr.push({name: curr_time.getMonth() + '/' + curr_time.getDate(), personExit: num_exited, personEnter: num_entered, peopleInside: num_of_ppl })
+                    }
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify(arr));
+                    return
+                },
+                    (err) => {
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                            error: err
+                        }));
+                    })
+                // } catch (error) {
+                //     res.writeHead(200, { 'Content-Type': 'application/json' });
+                //     res.end(JSON.stringify({
+                //         error: error
+                //     }));
+                // }
+            } else {
+                res.writeHead(401, {});
+                res.end();
+                return;
             }
-            console.log(result)
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ result: result, err: 0 }));
+
         })
     }
 
@@ -149,13 +203,14 @@ class api extends Layer {
         //   mqtt.publish('/history', "Send all data!")
         this.verify_jwt(data.token, (result, payload) => {
             if (result) {
-                console.log(payload)
+                // TODO: Check if user has permission to view data
                 // TODO: retrieve all data and put it into the database
                 // for loop 
                 // db.addCameraHistory(cam id, data change)
 
                 //TODO: Change 1 to camera_id
-                db.getCurrentPeopleInRoom(1, (result) => {
+                console.log(data['room_id'])
+                db.getCurrentPeopleInRoom(data['room_id'], (result) => {
                     const sum = result.reduce((partialSum, a) => partialSum + a.count, 0);
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({

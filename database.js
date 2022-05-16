@@ -29,9 +29,10 @@ function get_entry_log(camera_id, callback) {
 
 // Calculates people in room for the current day
 function getCurrentPeopleInRoom(camera_id, callback, err_handler) {
-  db.query("select count \
-  from entry_log \
-  where camera_id = ?;", [
+  db.query("SELECT cameras.camera_id, entry_log.count \
+  FROM cameras \
+  INNER JOIN entry_log ON cameras.camera_id = entry_log.camera_id \
+  WHERE cameras.room_id = ?", [
     camera_id
   ], (error, results) => {
     if (error) {
@@ -43,6 +44,11 @@ function getCurrentPeopleInRoom(camera_id, callback, err_handler) {
 }
 
 // Calculates people in room for the current day
+/*
+A way to improve this method is to store a room count in the database (this could be stored in the camera table). 
+The room count is updated every day or week andis used to calculate the number of people in the room relative to
+the current day so you won't overload the server with a million entries if it comes to that.
+ */
 function getCurrentPeopleInRoomToday(camera_id, callback, err_handler) {
   db.query("select count \
   from entry_log \
@@ -92,8 +98,8 @@ SELECT memberships.org_id,
 		cameras.device_name 
 FROM memberships 
 INNER JOIN organizations ON memberships.org_id = organizations.org_id
-LEFT JOIN rooms ON memberships.org_id = rooms.org_id
-LEFT JOIN cameras ON cameras.room_id = rooms.room_id
+LEFT JOIN rooms ON IF(memberships.room_id=-1,memberships.org_id = rooms.org_id,memberships.room_id=rooms.room_id and memberships.org_id = rooms.org_id)
+LEFT JOIN cameras ON IF(memberships.room_id=-1,cameras.room_id = rooms.room_id,cameras.room_id = memberships.room_id)
 WHERE memberships.member_id = ?;
 `
 
@@ -122,6 +128,22 @@ function addUserIfNotExist(username, callback) {
     });
 }
 
+function getAllEntriesWithin(start, end, room_id, callback){
+  db.query(`
+    SELECT entry_log.date, entry_log.count
+    FROM cameras
+    INNER JOIN entry_log ON cameras.camera_id = entry_log.camera_id AND entry_log.date BETWEEN ? AND ?
+    WHERE cameras.room_id = ?
+    ORDER BY entry_log.date ASC
+  `, [start, end, room_id], (error, results) => {
+      if (error) {
+        callback({error: 1, message: error})
+      } else {
+        callback(results)
+      }
+    });
+}
+
 module.exports.initialize_db = initialize_db
 module.exports.get_entry_log = get_entry_log
 module.exports.getCurrentPeopleInRoom = getCurrentPeopleInRoom
@@ -130,3 +152,4 @@ module.exports.getCurrentPeopleInRoomCurrentHour = getCurrentPeopleInRoomCurrent
 module.exports.addCameraHistory = addCameraHistory
 module.exports.getUserAssociation = getUserAssociation
 module.exports.addUserIfNotExist = addUserIfNotExist
+module.exports.getAllEntriesWithin = getAllEntriesWithin
