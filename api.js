@@ -32,6 +32,16 @@ const mqtt = require('./mqtt_server')
 const db = require('./database')
 const cognitoJwtVerifier = require('aws-jwt-verify');
 
+var WITHHOLD = false
+
+function recurse(callback){
+    if(WITHHOLD){
+        // console.log("withholding" + cnt++)
+        setTimeout(() => { recurse(callback) }, 100);
+    } else {
+        callback()
+    }
+}
 const INTERVALS = 10
 
 // Verifier that expects valid access tokens:
@@ -145,9 +155,10 @@ class api extends Layer {
                 let start = new Date(data.start)
                 let end = new Date(data.end)
 
+                recurse(() => {
                 // console.log(start + '\n' + end + '\n' + result)
                 db.getAllEntriesWithin(start.toISOString(), end.toISOString(), data['room_id'], (result) => {
-                    let time_interval = (end - start) / (INTERVALS - 1)
+                    let time_interval = (end - start) / (INTERVALS)
                     var curr_interval = 0;
                     var num_of_ppl = 0;
                     var num_entered = 0;
@@ -158,9 +169,9 @@ class api extends Layer {
 
                     for(var i = 0; i < INTERVALS; i ++){
                         let curr_time = new Date(start * 1 + time_interval * i)
-                        let entry = result[entry_ind]
 
-                        while(entry_ind < result.length && curr_time > new Date(result[entry_ind].date)){
+                        while(entry_ind < result.length && curr_time >= new Date(result[entry_ind].date)){
+                            let entry = result[entry_ind]
                             num_of_ppl += entry.count
                             if(entry.count > 0){
                                 num_entered += entry.count
@@ -171,7 +182,7 @@ class api extends Layer {
                         }
                         // Locale default to EN_US
                         // + '/' + (curr_time.getFullYear() % 100)
-                        arr.push({name: curr_time.getMonth() + '/' + curr_time.getDate(), personExit: num_exited, personEnter: num_entered, peopleInside: num_of_ppl })
+                        arr.push({name: curr_time.getMonth() + 1 + '/' + curr_time.getDate(), personExit: num_exited, personEnter: num_entered, peopleInside: num_of_ppl })
                     }
 
                     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -183,7 +194,7 @@ class api extends Layer {
                         res.end(JSON.stringify({
                             error: err
                         }));
-                    })
+                    })})
                 // } catch (error) {
                 //     res.writeHead(200, { 'Content-Type': 'application/json' });
                 //     res.end(JSON.stringify({
@@ -199,38 +210,44 @@ class api extends Layer {
         })
     }
 
+
     get_occupancy(url, data, res) {
         //   mqtt.publish('/history', "Send all data!")
         this.verify_jwt(data.token, (result, payload) => {
             if (result) {
-                // TODO: Check if user has permission to view data
-                // TODO: retrieve all data and put it into the database
-                // for loop 
-                // db.addCameraHistory(cam id, data change)
+                mqtt.publish('/history', 'get history')
+                WITHHOLD = true
 
-                //TODO: Change 1 to camera_id
-                console.log(data['room_id'])
-                db.getCurrentPeopleInRoom(data['room_id'], (result) => {
-                    const sum = result.reduce((partialSum, a) => partialSum + a.count, 0);
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({
-                        cardType: InfoWidgetTypes.SINGLE,
-                        attributes: {
-                            data: sum + " People in the Room",
-                            icon: "human"
-                        }
-                    }));
-                },
-                    (err) => {
+                recurse(() => {
+                    // TODO: Check if user has permission to view data
+                    // TODO: retrieve all data and put it into the database
+                    // for loop 
+                    // db.addCameraHistory(cam id, data change)
+
+                    //TODO: Change 1 to camera_id
+                    console.log(data['room_id'])
+                    db.getCurrentPeopleInRoom(data['room_id'], (result) => {
+                        const sum = result.reduce((partialSum, a) => partialSum + a.count, 0);
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({
                             cardType: InfoWidgetTypes.SINGLE,
                             attributes: {
-                                data: "An error occured",
+                                data: sum + " People in the Room",
                                 icon: "human"
                             }
                         }));
-                    })
+                    },
+                        (err) => {
+                            res.writeHead(200, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify({
+                                cardType: InfoWidgetTypes.SINGLE,
+                                attributes: {
+                                    data: "An error occured",
+                                    icon: "human"
+                                }
+                            }));
+                        })
+                })
             } else {
                 res.writeHead(401, {});
                 res.end();
@@ -240,37 +257,46 @@ class api extends Layer {
         })
     }
 
-    retrieve_people_this_hour(res, isPos) {
+    retrieve_people_this_hour(res, isPos, room_id, tok) {
         //TODO: Change 1 to camera_id
-        db.getCurrentPeopleInRoomCurrentHour(1, (result) => {
-            const sum = result.reduce((partialSum, a) => partialSum + ((isPos ? (a.count > 0) : (a.count < 0)) ? a.count : 0), 0);
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({
-                cardType: InfoWidgetTypes.SINGLE,
-                attributes: {
-                    data: Math.abs(sum) + " People " + (isPos ? "Entered" : "Left") + " in the Past Hour",
-                    icon: (isPos ? "enter" : "exit")
-                }
-            }));
-        },
-            (err) => {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({
-                    cardType: InfoWidgetTypes.SINGLE,
-                    attributes: {
-                        data: "An error occured",
-                        icon: (isPos ? "enter" : "exit")
-                    }
-                }));
-            })
+        this.verify_jwt(tok, (result, payload) => {
+            if (result) {
+                recurse(() => {
+                    db.getAllEntriesWithin(new Date(new Date().setHours(new Date().getHours() - 1)).toISOString(), new Date().toISOString(), room_id, (result) => {
+                        const sum = result.reduce((partialSum, a) => partialSum + ((isPos ? (a.count > 0) : (a.count < 0)) ? a.count : 0), 0);
+                        res.writeHead(200, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({
+                            cardType: InfoWidgetTypes.SINGLE,
+                            attributes: {
+                                data: Math.abs(sum) + " People " + (isPos ? "Entered" : "Left") + " in the Past Hour",
+                                icon: (isPos ? "enter" : "exit")
+                            }
+                        }));
+                    },
+                        (err) => {
+                            res.writeHead(200, { 'Content-Type': 'application/json' });
+                            res.end(JSON.stringify({
+                                cardType: InfoWidgetTypes.SINGLE,
+                                attributes: {
+                                    data: "An error occured",
+                                    icon: (isPos ? "enter" : "exit")
+                                }
+                            }));
+                        })
+                })
+        } else {
+            res.writeHead(401, {});
+            res.end();
+            return;
+        }})
     }
 
     get_hourly_poschange(url, data, res) {
-        this.retrieve_people_this_hour(res, true)
+        this.retrieve_people_this_hour(res, true, data['room_id'], data.token)
     }
 
     get_hourly_negchange(url, data, res) {
-        this.retrieve_people_this_hour(res, false)
+        this.retrieve_people_this_hour(res, false, data['room_id'], data.token)
     }
 
     get_user_association(url, data, res) {
@@ -283,4 +309,9 @@ class api extends Layer {
     }
 }
 
+function stopWithholding(){
+    WITHHOLD = false
+}
+
 module.exports = api;
+module.exports.stopWithholding = stopWithholding;

@@ -144,6 +144,14 @@ function getAllEntriesWithin(start, end, room_id, callback){
     });
 }
 
+function insertEntryLogs(values, callback){
+  db.query(`
+  INSERT INTO entry_log (camera_id, date, count) VALUES?`, [values], (err) => {
+    if (err) callback(err);
+    else callback({status: 0})
+  })
+}
+
 module.exports.initialize_db = initialize_db
 module.exports.get_entry_log = get_entry_log
 module.exports.getCurrentPeopleInRoom = getCurrentPeopleInRoom
@@ -153,3 +161,4 @@ module.exports.addCameraHistory = addCameraHistory
 module.exports.getUserAssociation = getUserAssociation
 module.exports.addUserIfNotExist = addUserIfNotExist
 module.exports.getAllEntriesWithin = getAllEntriesWithin
+module.exports.insertEntryLogs = insertEntryLogs

@@ -84,7 +84,7 @@ function dispatch(topic, msg) {
 //-----------------------------------------------------------------------------
 function start(broker, usrname, pwd, ca_cert) {
 
-   var client = mqtt.connect(broker, {
+   client = mqtt.connect(broker, {
       // username : usrname,
       // password : pwd,
       // ca: fs.readFileSync(ca_cert),
@@ -118,3 +118,4 @@ function start(broker, usrname, pwd, ca_cert) {
 
 module.exports.register = register;
 module.exports.start = start;
+module.exports.publish = publish;

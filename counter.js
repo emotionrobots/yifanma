@@ -29,20 +29,11 @@ const Layer = require('./layer');
 const g = require('./globals');
 const http = require('./http_server')
 const db = require('./database')
-
-var counter = 0;
+const api = require('./api')
 
 class pplCounter extends Layer {
    constructor() {
       super();
-
-      //-----------------------------------------------------------------------
-      //  HTTP registry 
-      //-----------------------------------------------------------------------
-	
-      /* Insert POST handleris below */
-
-      /* Insert GET handlers below */
 
       //-----------------------------------------------------------------------
       //  MQTT registry
@@ -70,13 +61,31 @@ class pplCounter extends Layer {
     counter += params["enter"] - params["exit"];
  }
 
- //--------------------------------------------------------------------------
-   //  HistoryHandler 
+   //--------------------------------------------------------------------------
+   //  HistoryHandler
    //--------------------------------------------------------------------------
    HistoryHandler(topic, message, client) {
-    var params = JSON.parse(message.toString())
-    g.dprint(3, message.toString())
-    console.log("Called HistoryHandler");
+      try{
+      var params = JSON.parse(message.toString())
+      var array2d = new Array(params.body.length)
+      for(var i = 0; i < array2d.length; ++i) {
+         array2d[i] = new Array(3)
+         array2d[i][0] = params.cam_serial
+         for (var j = 1; j <= 2; ++j)
+         array2d[i][j] = params.body[i][j-1]
+      }
+      db.insertEntryLogs(array2d, (status) => {
+         if(!("status" in status)){
+            console.log("ERR: " + status.err)
+         }
+
+         console.log("saved " + array2d)
+
+         api.stopWithholding()
+      });
+      } catch (err) {
+         console.log("Caputured: " + message)
+      }
  }
 
 }

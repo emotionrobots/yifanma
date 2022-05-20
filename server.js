@@ -38,7 +38,7 @@ db.initialize_db()
 
 /* Register console dispatch */
 var frontend = new Web();
-frontend.bind_mqtt(mqtt_server); 
+// frontend.bind_mqtt(mqtt_server); 
 frontend.bind_http(http_server); 
 
 
